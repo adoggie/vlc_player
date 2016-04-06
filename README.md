@@ -25,7 +25,7 @@ test Okay:
 
 	python vlc_player.pyw
 	
-	<img src="./doc/main.png"/>
-	<br/>
-	<img src="./doc/play_window.png"/>
+<img src="./doc/main.png"/>
+<br/>
+<img src="./doc/play_window.png"/>
 	
