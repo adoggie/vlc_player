@@ -70,7 +70,10 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.connect(self.addbutton,SIGNAL('clicked()'),self.onAddFile)
 		self.connect(self.deletebutton,SIGNAL('clicked()'),self.onDeleteFile)
 		self.connect(self.savebutton,SIGNAL('clicked()'),self.onSaveFileList)
-		# self.connect(self.btnExport_1,SIGNAL('clicked()'),self.onBtnExport1Click)
+		self.connect(self.btnClearAll,SIGNAL('clicked()'),self.onClearAll)
+		self.connect(self.btnMoveUp,SIGNAL('clicked()'),self.onMoveUp)
+		self.connect(self.btnMoveDown,SIGNAL('clicked()'),self.onMoveDown)
+		self.connect(self.btnSetAudioTrack,SIGNAL('clicked()'),self.onSetAudioTrack)
 
 		self.positionslider.setToolTip("Position")
 		self.positionslider.setMaximum(1000)
@@ -88,6 +91,14 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 
 		self.connect(self.tvFiles,SIGNAL('itemDoubleClicked(QTreeWidgetItem*,int)'),self.onTreeItemDoubleClick)
 
+		self.connect(self.cbxAudioTrack,SIGNAL('currentIndexChanged(int)'),self.onAudioTrackChanged)
+
+
+		self.cbxAudioTrack.addItem('Track-0')
+		self.cbxAudioTrack.addItem('Track-1')
+		self.cbxAudioTrack.addItem('Track-2')
+		self.cbxAudioTrack.addItem('Track-3')
+
 
 	def onDeleteFile(self):
 		items = self.tvFiles.selectedItems()
@@ -102,8 +113,10 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		conf = self.getConfig()
 		filename = conf['player']['play_list_file']
 		content=[]
-		for item in self.tvitems.values():
-			content.append(item)
+
+		for idx in range(self.tvFiles.topLevelItemCount()):
+			ti = self.tvFiles.topLevelItem(idx)
+			content.append( self.tvitems[ti] )
 		data = json.dumps(content)
 		fp = open(PATH+'/'+filename,'w')
 		fp.write(data)
@@ -157,6 +170,9 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.tvFiles.resizeColumnToContents(0)
 		self.tvFiles.resizeColumnToContents(1)
 
+		# self.tvFiles.topLevelItem(0).setSelected(True)
+		# self.tvFiles.topLevelItem(1).setSelected(True)
+
 	def playFile(self):
 		if self.tvFiles.topLevelItemCount() == 0:
 			return
@@ -179,7 +195,6 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		#write film filename to file
 		fp = open(PATH+'/filmname.txt','w')
 		fp.write(basename.encode('utf-8'))
-		# fp.write(basename.decode('gbk').encode('utf-8'))
 		fp.close()
 
 
@@ -189,8 +204,6 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 	def PlayPause(self):
 		"""Toggle play/pause status
 		"""
-		# if self.tvFiles.topLevelItemCount() == 0:
-		# 	return
 
 		if self.playwnd.mediaplayer.is_playing():
 			self.playwnd.mediaplayer.pause()
@@ -199,18 +212,7 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		else:
 			ti = None
 			if self.playwnd.mediaplayer.play() == -1:
-			# if True:
-				# items = self.tvFiles.selectedItems()
-				# if items:
-				# 	ti = items[0]
-				# else:
-				# 	ti = self.tvFiles.topLevelItem(0) #默认播放第一条
-				#
-				# if ti:
-				#
-				# 	self.playFile(ti)
 				self.playFile()
-				# self.playwnd.OpenFile()
 				return
 			self.playwnd.mediaplayer.play()
 			self.playbutton.setText("Pause")
@@ -224,8 +226,6 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.playbutton.setText("Play")
 
 		self.PlayNext()
-		# if rewind is set ,then replay
-
 
 	def PlayNext(self):
 		if not self.tvFiles.topLevelItemCount():
@@ -252,7 +252,10 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		return '%02d:%02d:%02d'%(h,m,s)
 
 	def play_percent(self,current,length):
-		return "%02d"%(current/length*100+1)
+		# print current,length
+		if not length:
+			return '00'
+		return "%02d"%(current/(length*1.0)*100+1)
 
 	def onPlayProgress(self,duration,elapsed,progress):
 		current = self.human_time( elapsed)
@@ -271,9 +274,70 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 	def onSliderPressed(self):
 		self.playwnd.setPosition( self.positionslider.sliderPosition())
 
-	# def onPlayEnd(self):
-	# 	print 'play is ending..'
-	# 	pass
+	def onMoveDown(self):
+		items = self.tvFiles.selectedItems()
+		if not items:
+			return
+		# qt bug , orders will be wrong after treeitem moving.
+		# must sort treeitem as new array
+		items = sorted(items,lambda x,y:cmp(self.tvFiles.indexOfTopLevelItem(x),self.tvFiles.indexOfTopLevelItem(y)))
+
+		first = items[0]
+		end = items[-1]
+		idx = self.tvFiles.indexOfTopLevelItem(end)
+		if idx == self.tvFiles.topLevelItemCount()-1:
+			return
+		items.reverse()
+		for ti in items:
+			idx = self.tvFiles.indexOfTopLevelItem(ti)
+			below = self.tvFiles.topLevelItem(idx+1)
+			self.tvFiles.takeTopLevelItem(idx+1)
+			self.tvFiles.insertTopLevelItem(idx,below)
+		for ti in items:
+			ti.setSelected(True)
+		self.adjustTreeList()
+
+	def onMoveUp(self):
+		items = self.tvFiles.selectedItems()
+		if not items:
+			return
+		# qt bug , orders will be wrong after treeitem moving.
+		# must sort treeitem as new array
+		items = sorted(items,lambda x,y:cmp(self.tvFiles.indexOfTopLevelItem(x),self.tvFiles.indexOfTopLevelItem(y)))
+
+		first = items[0]
+		# end = items[-1]
+		idx = self.tvFiles.indexOfTopLevelItem( first)
+		if idx == 0:
+			return # reached header
+		# items.reverse()
+		for ti in items:
+			idx = self.tvFiles.indexOfTopLevelItem(ti)
+			up = self.tvFiles.topLevelItem(idx-1)
+			self.tvFiles.takeTopLevelItem(idx-1)
+			self.tvFiles.insertTopLevelItem(idx,up)
+		for ti in items:
+			ti.setSelected(True)
+		self.adjustTreeList()
+
+		pass
+
+	def onClearAll(self):
+		track_count = self.playwnd.mediaplayer.audio_get_track_count()
+		track_current = self.playwnd.mediaplayer.audio_get_track()
+		print track_count,track_current
+		self.playwnd.mediaplayer.audio_set_track(2)
+		return
+		self.tvitems = {}
+		self.current_ti = None
+		self.tvFiles.clear()
+
+	def onSetAudioTrack(self):
+		idx = self.cbxAudioTrack.currentIndex()
+		self.playwnd.mediaplayer.audio_set_track(idx)
+
+	def onAudioTrackChanged(self,index):
+		self.playwnd.mediaplayer.audio_set_track(index)
 
 def test():
 	fp = open('playlist.json')
@@ -287,9 +351,4 @@ if __name__ == "__main__":
 	app = QtGui.QApplication(sys.argv)
 	wnd = PlayCtrlWnd()
 	wnd.show()
-	# wnd.resize(901, 619)
-	# print app ,wnd
-
-	# test()
-
 	sys.exit(app.exec_())
