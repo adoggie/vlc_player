@@ -326,8 +326,7 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		track_count = self.playwnd.mediaplayer.audio_get_track_count()
 		track_current = self.playwnd.mediaplayer.audio_get_track()
 		print track_count,track_current
-		self.playwnd.mediaplayer.audio_set_track(2)
-		return
+
 		self.tvitems = {}
 		self.current_ti = None
 		self.tvFiles.clear()
