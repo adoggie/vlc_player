@@ -1,0 +1,90 @@
+$def with (name)
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js" ></script>
+
+<script>
+	function playIndex(index){
+		jQuery.ajax({
+						url:'/playIndex',
+						data:{index:index}
+					})
+	}
+
+	jQuery(document).ready(function(){
+		jQuery('#get_info').on('click',function(){
+			jQuery.ajax(
+					{
+						url:'/playInfo',
+						success:function(data){
+							var info ="<p>播放影片:"+ data.film +'</p>';
+							info+="<p>播放时间:" + data.time +'</p>';
+							info+='<p>音轨通道:'
+							info+='<select id="track_list">';
+							for(var n=0;n<data.film_audio_track_count;n++){
+								info+='<option value="'+ n + '">'+n+'</option>';
+							}
+
+							info+='</select>';
+							info+='<button name="set_track">设置</button>';
+							info+='</p>'
+
+							info+='<h2>即将播放:</h2>';
+							for(var n=0;n<data.film_next.length;n++){
+								var film = data.film_next[n];
+								info+='<p><button onclick="playIndex(' + film.index +')">播放</button>'
+
+								info+=film.name;
+
+								info+='</p>'
+							}
+
+							jQuery('#content').html(info);
+
+
+						}
+					}
+			);
+		});
+		jQuery('#get_list').on('click',function(){
+			jQuery.ajax(
+					{
+						url:'/playList',
+						success:function(data){
+
+
+							var info='<h2>全部播放列表:</h2>';
+							for(var n=0;n<data.length;n++){
+								var film = data[n];
+								info+='<p><button onclick="playIndex(' + film.index +')">播放</button>'
+
+								info+=film.name;
+
+								info+='</p>'
+							}
+
+							jQuery('#content').html(info);
+
+
+						}
+					}
+			);
+		});
+	});
+
+</script>
+<body>
+<h1>【邵氏经典】</h1>
+<h2>http://www.panda.tv/227916</h2>
+
+<button id="get_info" name="getPlayInfo">当前播放影片信息</button>
+<button id="get_list" name="getPlayList">所有影片列表</button>
+<div id="content">
+</div>
+</body>
+</html>

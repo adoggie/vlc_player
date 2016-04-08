@@ -3,3 +3,11 @@ player:
   play_win_size:  720,400
   play_list_file: playlist.json
   play_win_title: pandatv
+
+
+extension:
+  chomp:
+    enable: true
+    host:
+    port: 8888
+

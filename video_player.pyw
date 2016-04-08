@@ -42,9 +42,20 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		x,y = map(int,self.getConfig()['player']['play_win_size'].split(','))
 		self.playwnd.resize(x,y)
 
+
+		self.init_signal()
+
 		self.init_data()
 		self.init_ui()
 		self.load_default()
+		self.load_extensions()
+
+	singal_playIndex = pyqtSignal(object)
+
+	def init_signal(self):
+		self.singal_playIndex.connect(self.playIndex)
+
+
 
 	def init_data(self):
 		self.playlist =[]
@@ -52,6 +63,9 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.current_ti = None
 
 		self.last_elapsed_time = 0
+
+		self.current_playfilm = ''
+		self.current_playtime =''
 
 	def getConfig(self):
 		confile = PATH+'/play.yaml'
@@ -184,7 +198,8 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 			ti = self.tvFiles.topLevelItem(0)
 		self.current_ti = ti
 		self.tvFiles.setCurrentItem(ti)
-
+		print 'playFile:'
+		print ti
 		playitem = self.tvitems[ti]
 		basename = playitem['basename']
 		filename = playitem['fullname']
@@ -196,6 +211,8 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		fp = open(PATH+'/filmname.txt','w')
 		fp.write(basename.encode('utf-8'))
 		fp.close()
+
+		self.current_playfilm = basename.encode('utf-8')
 
 
 	def onTreeItemDoubleClick(self,ti,col):
@@ -271,6 +288,8 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 			fp.close()
 			self.last_elapsed_time = time.time()
 
+			self.current_playtime = playtime.encode('utf-8')
+
 	def onSliderPressed(self):
 		self.playwnd.setPosition( self.positionslider.sliderPosition())
 
@@ -337,6 +356,135 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 
 	def onAudioTrackChanged(self,index):
 		self.playwnd.mediaplayer.audio_set_track(index)
+
+	def load_extensions(self):
+		if not hasattr(self,'extensions'):
+			self.extensions =[]
+
+		import extension
+		for mcls in extension.all:
+			print mcls.Name
+
+			conf = self.getConfig()['extension'].get(mcls.Name)
+			if not conf['enable']:
+				continue
+			print 'create module: ',mcls.Name
+			inst = mcls(self,conf)
+			print 'instance: ',inst
+			inst.run()
+			self.extensions.append(inst)
+
+	def unload_extensions(self):
+		if not hasattr(self,'extensions'):
+			return
+		for ext in self.extensions:
+			ext.stop()
+
+
+	def getPlayInfo(self,max_list_num = 999):
+		"""
+		获取当前播放信息
+			- 当前影片, 播放时间信息, 已播放影片, 待播放影片
+			- 当前音轨编号
+		"""
+		start = 0
+		if self.current_ti:
+			start = self.tvFiles.indexOfTopLevelItem(self.current_ti)
+		result = []
+		for idx in range(start+1, self.tvFiles.topLevelItemCount()):
+			if len(result) > max_list_num:
+				break
+			ti = self.tvFiles.topLevelItem(idx)
+			name = self.tvitems[ti]['basename']
+			result.append( {'index':idx,'name':name} )
+
+
+		info = {
+			'film':self.current_playfilm,
+			'time':self.current_playtime,
+			'film_played':[],
+			'film_next': result,
+			'film_audio_track_count':self.playwnd.mediaplayer.audio_get_track_count(),
+			'file_audio_track_current':self.playwnd.mediaplayer.audio_get_track()
+		}
+		return info
+
+	def getPlayList(self,max_list_num= 999):
+		"""
+		获取播放影片列表
+		"""
+		result = []
+		for idx in range(self.tvFiles.topLevelItemCount()):
+			if len(result) > max_list_num:
+				break
+			ti = self.tvFiles.topLevelItem(idx)
+			name = self.tvitems[ti]['basename']
+			result.append( {'index':idx,'name':name} )
+			# print 'tree-item index:'
+			treeidx = self.tvFiles.indexOfTopLevelItem(ti)
+			print idx,' ',treeidx,'  ',name
+		return result
+
+	def playIndex(self,index):
+		"""
+		播放指定索引的影片
+		"""
+		print 'ready to play index:',index
+		ti = self.tvFiles.topLevelItem(index)
+		if not ti:
+			return
+		if self.current_ti == ti:
+			return
+		print self.tvitems[ti]['basename']
+
+
+		self.tvFiles.setCurrentItem(ti)
+		# ti.setSelected(True)
+		print 'treeItem:',ti
+		self.playFile()
+
+
+	def playSkip(self,span):
+		"""
+		播放时间跳跃 , + - 控制向前还是向后
+		:param span:
+		:return:
+		"""
+		pass
+
+	def playSetAudioTrack(self,track):
+		"""
+		设置音轨
+		:param track:
+		:return:
+		"""
+		self.playwnd.mediaplayer.audio_set_track(track)
+
+
+
+	def playPrev(self):
+		pass
+
+	def playNext(self):
+		if not self.tvFiles.topLevelItemCount():
+			self.current_ti = None
+			return
+
+		if self.current_ti == None :
+			self.current_ti = self.tvFiles.topLevelItem(0)
+		else:
+			idx = self.tvFiles.indexOfTopLevelItem(self.current_ti)
+			idx+=1
+			if idx == self.tvFiles.topLevelItemCount():
+				self.current_ti = self.tvFiles.topLevelItem(0) # rewind to first
+			else:
+				self.current_ti = self.tvFiles.topLevelItem(idx)
+		self.tvFiles.setCurrentItem( self.current_ti)
+		self.playFile()
+
+	def closeEvent(self,event):
+		self.unload_extensions()
+		event.accept()
 
 def test():
 	fp = open('playlist.json')
