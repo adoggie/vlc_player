@@ -64,6 +64,16 @@ class PlayIndex:
 		i = web.input()
 		index = i.get('index')
 		index = int(index)
+		password = i.get('password')
+
+		pwd = '1234'
+		pswfile = PATH+'/password.txt'
+		if os.path.exists(pswfile):
+			fp = open(pswfile)
+			pwd = fp.read().strip()
+		if pwd != password:
+			return
+
 		player = PlayController.instance().getPlayer()
 		# player.playIndex(index)
 		player.singal_playIndex.emit(index)
