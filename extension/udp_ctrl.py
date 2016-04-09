@@ -72,6 +72,7 @@ class PlayIndex:
 			fp = open(pswfile)
 			pwd = fp.read().strip()
 		if pwd != password:
+			print 'playIndex error: password incorrect!'
 			return
 
 		player = PlayController.instance().getPlayer()

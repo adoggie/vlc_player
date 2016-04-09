@@ -10,9 +10,17 @@ $def with (name)
 
 <script>
 	function playIndex(index){
+		var password = prompt("需要密码哦");
+		if(password ==''){
+			return;
+		}
 		jQuery.ajax({
 						url:'/playIndex',
-						data:{index:index}
+						data:{
+							index:index,
+							password:password
+
+						}
 					})
 	}
 
