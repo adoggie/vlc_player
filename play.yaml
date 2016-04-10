@@ -10,4 +10,6 @@ extension:
     enable: true
     host:
     port: 8888
+    playlist_size: 50
+    playedlist_size: 20
 

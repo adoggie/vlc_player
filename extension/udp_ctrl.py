@@ -17,6 +17,21 @@ import threading,time,os,traceback,json
 import web
 PATH = os.path.dirname(os.path.abspath(__file__))
 
+MODULE_NAME='chomp'
+
+class YamlConfigReader:
+	def __init__(self,conf):
+		self.props ={}
+		self.conf = conf
+		self.read_file(conf)
+
+	def read_file(self,conf):
+		import yaml
+		f = open(conf)
+		self.props = yaml.load(f.read())
+		f.close()
+
+
 URLS = (
 	'/', 'Index',
 	'/playIndex','PlayIndex', #播放指定文件  ?index=2
@@ -24,6 +39,7 @@ URLS = (
 	'/playList','PlayList',
 	'/playSkip','PlaySkip', # ?pos=10  forward 10 second
 	'/setTrack','SetTrack', # ?track=1
+	'/playedList','PlayedList', #已播列表
 )
 
 class Index:
@@ -41,10 +57,28 @@ class PlayInfo:
 		return json.dumps(info)
 
 
+class PlayedList:
+	"""
+	查询已播清单
+	"""
+	def GET(self):
+		conf_file = PATH+'/../play.yaml'
+		conf = YamlConfigReader(conf_file).props['extension'][MODULE_NAME]
+		list_size = conf['playedlist_size']
+
+		player = PlayController.instance().getPlayer()
+		info = player.getPlayedList( list_size )
+		web.header('Content-Type', 'application/json')
+		return json.dumps(info)
+
 class PlayList:
 	def GET(self):
+		conf_file = PATH+'/../play.yaml'
+		conf = YamlConfigReader(conf_file).props['extension'][MODULE_NAME]
+		list_size = conf['playlist_size']
+
 		player = PlayController.instance().getPlayer()
-		info = player.getPlayList()
+		info = player.getPlayList( list_size )
 		web.header('Content-Type', 'application/json')
 		return json.dumps(info)
 

@@ -21,7 +21,18 @@ $def with (name)
 							password:password
 
 						}
-					})
+					});
+	}
+
+	//设置音轨编号
+	function setTrack(){
+		var track = jQuery('#track_list').val();
+		jQuery.ajax({
+					url:'/setTrack',
+					data:{
+						track:track,
+					}
+				});
 	}
 
 	jQuery(document).ready(function(){
@@ -39,7 +50,7 @@ $def with (name)
 							}
 
 							info+='</select>';
-							info+='<button name="set_track">设置</button>';
+							info+='<button name="set_track" onclick="setTrack()">设置</button>';
 							info+='</p>'
 
 							info+='<h2>即将播放:</h2>';
@@ -84,6 +95,33 @@ $def with (name)
 					}
 			);
 		});
+
+
+		jQuery('#get_playedlist').on('click',function(){
+			jQuery.ajax(
+					{
+						url:'/playedList',
+						success:function(data){
+
+							var info='<h2>已播放列表:</h2>';
+							for(var n=0;n<data.length;n++){
+								var item = data[n];
+								info+='<p>';
+								info+= item.time;
+								info+='__';
+								info+=item.name;
+								info+='</p>'
+							}
+
+							jQuery('#content').html(info);
+
+
+						}
+					}
+			);
+		});
+
+
 	});
 
 </script>
@@ -93,6 +131,8 @@ $def with (name)
 
 <button id="get_info" name="getPlayInfo">当前播放影片信息</button>
 <button id="get_list" name="getPlayList">所有影片列表</button>
+<button id="get_playedlist" name="getPlayedList">已播影片..</button>
+
 <div id="content">
 </div>
 </body>

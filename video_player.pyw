@@ -4,7 +4,7 @@ __author__ = 'zhangbin'
 
 
 import sys
-import os.path,os,time
+import os.path,os,time,datetime
 import vlc
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -89,6 +89,9 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.connect(self.btnMoveDown,SIGNAL('clicked()'),self.onMoveDown)
 		self.connect(self.btnSetAudioTrack,SIGNAL('clicked()'),self.onSetAudioTrack)
 
+		self.connect(self.btnSaveAs,SIGNAL('clicked()'),self.onSaveAs)
+		self.connect(self.btnLoadFrom,SIGNAL('clicked()'),self.onLoadFrom)
+
 		self.positionslider.setToolTip("Position")
 		self.positionslider.setMaximum(1000)
 
@@ -112,6 +115,54 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		self.cbxAudioTrack.addItem('Track-1')
 		self.cbxAudioTrack.addItem('Track-2')
 		self.cbxAudioTrack.addItem('Track-3')
+
+	def onSaveAs(self):
+		"""
+		保存播放列表
+		:return:
+		"""
+		conf = self.getConfig()
+		filename = QFileDialog.getSaveFileName(self,'select save list file','new_list.json','*.json')
+		filename = unicode(filename)
+		if not filename:
+			return
+
+		content=[]
+
+		for idx in range(self.tvFiles.topLevelItemCount()):
+			ti = self.tvFiles.topLevelItem(idx)
+			content.append( self.tvitems[ti] )
+		data = json.dumps(content)
+		fp = open(filename,'w')
+		fp.write(data)
+		fp.close()
+		QMessageBox.about(self,u'提示',u'save okay!')
+
+	def onLoadFrom(self):
+		"""
+		文件中加载播放列表
+		:return:
+		"""
+		conf = self.getConfig()
+		filename = QFileDialog.getOpenFileName(self,'select save list file','new_list.json','*.json')
+		filename = unicode(filename)
+		
+		if not filename:
+			return
+
+		# self.tvitems.clear()
+		fp = open(filename)
+		content = fp.read()
+		filelist = json.loads(content)
+		for no,item in enumerate(filelist):
+			row = (str(no),item['basename'])
+			ti = QTreeWidgetItem(row )
+			self.tvFiles.addTopLevelItem(ti)
+			self.tvitems[ti] = item
+
+
+		self.adjustTreeList()
+
 
 
 	def onDeleteFile(self):
@@ -213,6 +264,15 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 		fp.close()
 
 		self.current_playfilm = basename.encode('utf-8')
+
+		# write into playeslist file
+		fp = open(PATH+'/playedlist.txt','a+')
+
+		dt = datetime.datetime.fromtimestamp( time.time())
+		f1 =  "%04d-%02d-%02d %02d:%02d"%(dt.year,dt.month,dt.day,dt.hour,dt.minute)
+		f2 = basename.encode('utf-8')
+		fp.write( f1+','+f2+'\n')
+		fp.close()
 
 
 	def onTreeItemDoubleClick(self,ti,col):
@@ -423,6 +483,26 @@ class PlayCtrlWnd(QtGui.QFrame,play_ctrl.Ui_Form):
 			# print 'tree-item index:'
 			treeidx = self.tvFiles.indexOfTopLevelItem(ti)
 			print idx,' ',treeidx,'  ',name
+		return result
+
+	def getPlayedList(self,max_list_num= 999):
+		"""
+		获取已播放影片列表
+		从playedlist.txt 文件中读取
+		 time,filename
+		"""
+		result = []
+		fp = open(PATH+'/playedlist.txt')
+		lines = fp.readlines()
+		lines.reverse()
+		count = 0
+		for line in lines:
+			line = line.strip()
+			time,name = line.split(',')
+			result.append({'time':time,'name':name})
+			count+=1
+			if count == max_list_num:
+				break
 		return result
 
 	def playIndex(self,index):

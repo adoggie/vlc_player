@@ -24,6 +24,8 @@ class Player(QtGui.QMainWindow):
 
 		self.ctrl = ctrl
 
+		self.setWindowTitle(u'VideoPlayer for PandaTV 2016')
+
 	def createUI(self):
 		"""Set up the user interface, signals & slots
 		"""
@@ -110,7 +112,8 @@ class Player(QtGui.QMainWindow):
 		# parse the metadata of the file
 		self.media.parse()
 		# set the title of the track as window title
-		self.setWindowTitle(self.media.get_meta(0))
+
+		# self.setWindowTitle(self.media.get_meta(0))
 
 		# the media player has to be 'connected' to the QFrame
 		# (otherwise a video would be displayed in it's own window)

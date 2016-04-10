@@ -161,7 +161,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>SaveList</string>
+    <string>Save</string>
    </property>
   </widget>
   <widget class="QTreeWidget" name="tvFiles">
@@ -218,7 +218,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>210</y>
+     <y>280</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -231,7 +231,7 @@
    <property name="geometry">
     <rect>
      <x>520</x>
-     <y>180</y>
+     <y>250</y>
      <width>110</width>
      <height>32</height>
     </rect>
@@ -264,6 +264,32 @@
    </property>
    <property name="text">
     <string>audio set</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnSaveAs">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>140</y>
+     <width>110</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>SaveAs</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btnLoadFrom">
+   <property name="geometry">
+    <rect>
+     <x>520</x>
+     <y>170</y>
+     <width>110</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>LoadFrom</string>
    </property>
   </widget>
  </widget>
